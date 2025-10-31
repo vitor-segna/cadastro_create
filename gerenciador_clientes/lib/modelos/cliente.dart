@@ -53,7 +53,7 @@ Cliente ? login(String email, String senha){ //?=possibilidade de ser nulo(falha
    //é uma função anônima 
    //o c representa cada elemento(cada cliente) da lista _clientes
    (c) => c.email.toLowerCase() == email.toLowerCase() && c.senha == senha,//chamando o email do cliente
-   orElse: () => null, //retorna nulo se não encontrar os dados
+   orElse: () => Null as Cliente, //retorna nulo se não encontrar os dados
   );
 }
 }
