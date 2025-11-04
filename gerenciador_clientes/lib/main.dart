@@ -1,106 +1,151 @@
-//importa o dart 
+// lib/main.dart (INÍCIO ATUALIZADO)
 import 'package:flutter/material.dart';
-//importa o cliente/modelo de BD
-import 'package:gerenciador_clientes/modelos/cliente.dart';
+import 'modelos/cliente.dart'; // Importa o modelo.
+import 'package:firebase_core/firebase_core.dart'; // NOVO: Para iniciar o Firebase.
+
+// NOVO: Importe o arquivo de opções do seu projeto gerado pelo FlutterFire CLI
+import 'firebase_options.dart';
 
 
-//chamando o gerenciador de clientes/instanciando nosso BD
-final GerenciadorClientes gerenciadorClientes = GerenciadorClientes();
+//instaciano nosso BD
+// NOVO: Substituímos o GerenciadorClientes pelo ServicoClientes.
+final ServicoClientes servicoClientes = ServicoClientes();
 
-void main(){ //chamando
- gerenciadorClientes.cadastrar(
-  Cliente(nome: 'Admin', email: 'admin@gmail.com', senha: 'admin') //criando o cliente
+
+// A função main agora é assíncrona para inicializar o Firebase.
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Garante que o Flutter está pronto.
+
+  // Inicializa o Firebase (OBRIGATÓRIO).
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const AplicativoClientes()); 
+
+  runApp(const AplicativoClientes());
 }
-class AplicativoClientes extends StatelessWidget{
- const AplicativoClientes({super.key}); 
+// ...
+// O restante da classe AplicativoClientes permanece o mesmo...
+// ...
+class AplicativoClientes extends StatelessWidget {
+  const AplicativoClientes({super.key});
 
- @override
-
- Widget build(BuildContext context){ //widget|colocando texto nela
- return MaterialApp(
-  title: 'Sistema de Clientes', //titulo
-  debugShowCheckedModeBanner: false,//sem banner
-  theme: ThemeData(  primarySwatch: Colors.indigo, useMaterial3: true),//estilizandar
-  //APENAS MUDAR ISSO NA CLASSE AplicativoClientes
-  //cliente: Cliente(nome: 'DEV TESTE', email: 'dev@email.com', senha: '0'), 
-  home: const TelaLogin(), //LOGIN
- );
- }
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Sistema de Clientes',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
+      home: const TelaLogin(),// <--- agora começa no login
+    );
+  }
 }
 
-
-//mural/TELA INICIAL
 class TelaPrincipal extends StatelessWidget {
-final Cliente cliente;
+  final Cliente cliente;
 
-const TelaPrincipal({super.key, required this.cliente});
+  const TelaPrincipal({super.key, required this.cliente});
 
-@override
-Widget build(BuildContext context) {
-return Scaffold(
-appBar: AppBar(
-title: const Text('Área do Cliente'),
-automaticallyImplyLeading: false, // Remove a seta de voltar.
-actions: [
-// Botão de Sair (Logout).
-IconButton(
-icon: const Icon(Icons.logout),
-onPressed: () {
-// Navegação: Limpa a pilha e volta para a Tela de Login.
-Navigator.pushAndRemoveUntil(
-context,
-MaterialPageRoute(builder: (context) => const TelaLogin()),
-(Route<dynamic> route) => false, // Condição que remove todas as rotas.
-);
-},
-tooltip: 'Sair do Sistema',
-)
-],
-),
-body: Center(
-child: Padding(
-padding: const EdgeInsets.all(16.0),
-child: Column(
-mainAxisAlignment: MainAxisAlignment.center,
-children: [
-const Icon(Icons.check_circle_outline, size: 80, color: Colors.indigo),
-const SizedBox(height: 20),
-Text('Login de ${cliente.nome} realizado!', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-const SizedBox(height: 8),
-Text('E-mail: ${cliente.email}', style: const TextStyle(fontSize: 18, color: Colors.grey)),
-const SizedBox(height: 40),
-// Título da lista de clientes
-const Text('Clientes cadastrados (BD Simulado):', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-const SizedBox(height: 10),
-// Lista de Clientes Cadastrados
-Expanded(
-// Usa o getter 'clientes' do nosso gerenciador.
-child: ListView.builder(
-itemCount: gerenciadorClientes.clientes.length,
-itemBuilder: (context, index) {
-final c = gerenciadorClientes.clientes[index];
-return ListTile(
-leading: const Icon(Icons.person),
-title: Text(c.nome),
-subtitle: Text(c.email),
-);
-},
-),
-),
-],
-),
-),
-),
-);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Área do Cliente'),
+        automaticallyImplyLeading: false, // Remove a seta de voltar.
+        actions: [
+          // Botão de Sair (Logout).
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // Navegação: Limpa a pilha e volta para a Tela de Login.
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const TelaLogin()),
+                (Route<dynamic> route) =>
+                    false, // Condição que remove todas as rotas.
+              );
+            },
+            tooltip: 'Sair do Sistema',
+          ),
+        ],
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                size: 80,
+                color: Colors.indigo,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Login de ${cliente.nome} realizado!',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'E-mail: ${cliente.email}',
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 40),
+              // Título da lista de clientes
+              const Text(
+                'Clientes cadastrados (BD Simulado):',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              // Lista de Clientes Cadastrados
+              
+                  // NOVO: StreamBuilder para atualizar a lista em tempo real
+     StreamBuilder<List<Cliente>>(
+      // Conecta ao Stream de clientes do nosso serviço Firebase.
+      stream: servicoClientes.clientesStream,
+      builder: (context, snapshot) {
+        // 1. Se houver erro.
+        if (snapshot.hasError) {
+          return const Text('Erro ao carregar clientes.');
+        }
+
+        // 2. Se estiver carregando.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // 3. Se os dados estiverem prontos.
+        final clientes = snapshot.data ?? [];
+             return Expanded(
+                // Usa o getter 'clientes' do nosso gerenciador.
+                child: ListView.builder(
+                  itemCount: clientes.length,
+                  itemBuilder: (context, index) {
+                    final c = clientes[index];
+                    return ListTile(
+                      leading: const Icon(Icons.person),
+                      title: Text(c.nome),
+                      subtitle: Text(c.email),
+                    );
+                  },
+                ),
+             );
+      }
+    ),
+  
+            ],
+          ),
+        ),
+      ),
+    );
+  
+  }
 }
-}
 
 
 
-
-// lib/main.dart (CLASSE TELA CADASTRO COMPLETA)
 class TelaCadastro extends StatefulWidget {
   const TelaCadastro({super.key});
 
@@ -115,16 +160,17 @@ class _EstadoTelaCadastro extends State<TelaCadastro> {
   final _senhaController = TextEditingController();
   String _mensagemErro = '';
 
-  void _fazerCadastro() {
+  void _fazerCadastro() async {
     if (_chaveForm.currentState!.validate()) { // Se a validação dos campos for OK...
-      final novoCliente = Cliente(
+      setState(() => _mensagemErro = '');
+ final novoCliente = Cliente(
         nome: _nomeController.text.trim(),
         email: _emailController.text.trim(),
         senha: _senhaController.text,
       );
 
       // Tenta cadastrar no BD simulado.
-      final sucesso = gerenciadorClientes.cadastrar(novoCliente);
+      final sucesso =  await servicoClientes.cadastrar(novoCliente); // <-- AWAIT AQUI!
 
       if (sucesso) {
         // Se sucesso: exibe uma notificação e volta para a tela de Login.
@@ -140,8 +186,6 @@ class _EstadoTelaCadastro extends State<TelaCadastro> {
       }
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -207,12 +251,8 @@ class _EstadoTelaCadastro extends State<TelaCadastro> {
   }
 }
 
-
-
-
-
-// ATUALIZE O PLACEHOLDER DA TELA DE LOGIN PARA INCLUIR A NAVEGAÇÃO
 // (CLASSE TELA LOGIN COMPLETA)
+
 class TelaLogin extends StatefulWidget {
   const TelaLogin({super.key});
 
@@ -226,7 +266,7 @@ class _EstadoTelaLogin extends State<TelaLogin> {
   final _senhaController = TextEditingController();
   String _mensagemErro = '';
 
-  void _fazerLogin() {
+  void _fazerLogin() async {
     // 1. Validação dos campos
     if (_chaveForm.currentState!.validate()) {
       setState(() => _mensagemErro = ''); // Limpa erro.
@@ -235,7 +275,7 @@ class _EstadoTelaLogin extends State<TelaLogin> {
       final senha = _senhaController.text;
 
       // 2. Chama o método 'login' do nosso BD simulado.
-      final clienteLogado = gerenciadorClientes.login(email, senha);
+      final clienteLogado = await servicoClientes.login(email, senha); // <-- AWAIT AQUI!
 
       if (clienteLogado != null) {
         // 3. Login de sucesso: Navega para a tela principal (substituindo o Login).

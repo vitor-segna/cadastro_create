@@ -1,59 +1,94 @@
-//importe necessário do material App 
-import 'package:flutter/material.dart';
 
-//String=tipo de variável(texto)
+
+import 'package:cloud_firestore/cloud_firestore.dart'; // Importa o pacote do Firestore
+
+
+
 class Cliente {
+  // O ID do documento no Firestore. Não existia antes.
+  final String? id;
   final String nome;
   final String email;
-  final String senha;
+  final String senha; // Em um app real, a senha NÃO é guardada assim! Usaríamos o Firebase Auth.
 
- //Construtor do cliente
- Cliente({
-  required this.nome, //REQUIRED= é obrigatório preencher
-  required this.email,
-  required this.senha,
- });
- @override
- String toString(){ //toString= transforma em String
- return 'Cliente: $nome, Email: $email'; //$=Puxa as variáveis
- }
-}
+  Cliente({
+    this.id, // O ID é opcional (será gerado pelo Firestore).
+    required this.nome,
+    required this.email,
+    required this.senha,
+  });
 
-class GerenciadorClientes{
-  //Váriavel estática que guarda a única cópia desta classe
-  static final GerenciadorClientes _instancia = GerenciadorClientes._interno();
+  // ---------------------------------------------------------------------
+  // MÉTODOS PARA O FIREBASE
+  // ---------------------------------------------------------------------
 
-  //Impede a criação de novas instâncias
-  GerenciadorClientes._interno();
-
-  //sempre retorna a instância existente
-  factory GerenciadorClientes() => _instancia; //FATORA o gerenciador para a instância 
-
-  //lista <ul> que armazena todos os clientes cadastrados
-  final List<Cliente> _clientes= []; //LIST=uma lista não ordenada
-
-  
-  List<Cliente> get clientes => List.unmodifiable(_clientes);
-
- //Tentar cadastrar um cliente novo
-  bool cadastrar(Cliente cliente){
- //vamos checar se já existe um email cadastrado
- if(_clientes.any((c) => c.email.toLowerCase() == cliente.email.toLowerCase())){//ANY= se   
- print('Erro: email ${cliente.email} já cadastrado'); //mensagem puxando a variável de email
- return false; //cadastro falhou
+  // 1. Converte um Cliente para um MAPA (JSON) para salvar no Firestore.
+  Map<String, dynamic> toFirestore() {
+    return {
+      "nome": nome,
+      "email": email,
+      "senha": senha,
+    };
   }
- _clientes.add(cliente);//adicionar o cliente
- print('Novo cliente cadastrado : ${cliente.nome}');
- return true; //cadastrou 
+
+  // 2. Cria um objeto Cliente a partir de um DocumentSnapshot do Firestore.
+  factory Cliente.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+    final dados = snapshot.data()!;
+    return Cliente(
+      id: snapshot.id, // O ID do Firestore é o ID do nosso Cliente.
+      nome: dados['nome'] as String,
+      email: dados['email'] as String,
+      senha: dados['senha'] as String,
+    );
+  }
 }
 
+// ---------------------------------------------------------------------
+// CLASSE DE SERVIÇO: Substitui o GerenciadorClientes (Acessa o Firestore)
+// ---------------------------------------------------------------------
 
-Cliente ? login(String email, String senha){ //?=possibilidade de ser nulo(falhar)
-  return _clientes.firstWhere(
-   //é uma função anônima 
-   //o c representa cada elemento(cada cliente) da lista _clientes
-   (c) => c.email.toLowerCase() == email.toLowerCase() && c.senha == senha,//chamando o email do cliente
-   orElse: () => Null as Cliente, //retorna nulo se não encontrar os dados
-  );
-}
+class ServicoClientes {
+  // Referência à coleção (tabela) 'clientes' no Firestore.
+  final CollectionReference _colecao = FirebaseFirestore.instance.collection('clientes');
+
+  /// Tenta cadastrar um novo cliente no Firestore.
+  Future<bool> cadastrar(Cliente cliente) async {
+    // 1. Verifica duplicidade (Firestore Query).
+    final query = await _colecao.where('email', isEqualTo: cliente.email).get();
+    if (query.docs.isNotEmpty) {
+      return false; // E-mail já existe.
+    }
+
+    // 2. Adiciona o cliente ao Firestore.
+    await _colecao.add(cliente.toFirestore());
+    return true;
+  }
+
+  /// Tenta fazer o login buscando no Firestore.
+  Future<Cliente?> login(String email, String senha) async {
+    // Busca um documento onde email E senha coincidam.
+    final query = await _colecao
+        .where('email', isEqualTo: email)
+        .where('senha', isEqualTo: senha)
+        .get();
+
+    if (query.docs.isEmpty) {
+      return null; // Credenciais incorretas.
+    }
+
+    // Converte o DocumentSnapshot para um objeto Cliente.
+    return Cliente.fromFirestore(query.docs.first as DocumentSnapshot<Map<String, dynamic>>
+    );
+  }
+
+  /// Retorna um Stream dos clientes (para atualizar a UI em tempo real).
+  Stream<List<Cliente>> get clientesStream {
+    // O 'snapshots()' envia novos dados sempre que a coleção muda.
+    return _colecao.snapshots().map((snapshot) {
+      // Mapeia cada documento para um objeto Cliente.
+      return snapshot.docs
+          .map((doc) => Cliente.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
+          .toList();
+    });
+  }
 }
